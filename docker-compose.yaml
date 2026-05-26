@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: clipcurator-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432" # Maps the container port to your Mac's local port
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: clipcuratordb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data # Saves your data so it doesn't delete on restart
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d clipcuratordb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: clipcurator-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:

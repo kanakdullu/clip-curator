@@ -1,0 +1,62 @@
+{
+  "properties": [
+    {
+      "name": "app.aws.region",
+      "type": "java.lang.String",
+      "description": "AWS region used by ClipCurator services.",
+      "defaultValue": "us-east-1"
+    },
+    {
+      "name": "app.aws.s3.bucket",
+      "type": "java.lang.String",
+      "description": "S3 bucket used for ClipCurator uploads and derived assets.",
+      "defaultValue": "clipcurator-dev-bucket"
+    },
+    {
+      "name": "app.huggingface.api-token",
+      "type": "java.lang.String",
+      "description": "Hugging Face API token used for Whisper and CLIP calls."
+    },
+    {
+      "name": "app.huggingface.whisper-url",
+      "type": "java.lang.String",
+      "description": "Hugging Face Whisper inference endpoint URL.",
+      "defaultValue": "https://api-inference.huggingface.co/models/openai/whisper-large-v3"
+    },
+    {
+      "name": "app.huggingface.clip-url",
+      "type": "java.lang.String",
+      "description": "Hugging Face CLIP inference endpoint URL.",
+      "defaultValue": "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32"
+    },
+    {
+      "name": "app.pinecone.api-key",
+      "type": "java.lang.String",
+      "description": "Pinecone API key used by the Java SDK."
+    },
+    {
+      "name": "app.pinecone.index-name",
+      "type": "java.lang.String",
+      "description": "Pre-provisioned Pinecone index name.",
+      "defaultValue": "clipcurator-index"
+    },
+    {
+      "name": "app.pinecone.namespace",
+      "type": "java.lang.String",
+      "description": "Pinecone namespace used for vector upserts and queries.",
+      "defaultValue": "default"
+    },
+    {
+      "name": "app.processing.tmp-dir",
+      "type": "java.lang.String",
+      "description": "Local working directory for downloaded videos and extracted artifacts.",
+      "defaultValue": "/tmp/clipcurator/assets"
+    },
+    {
+      "name": "app.processing.ffmpeg.command",
+      "type": "java.lang.String",
+      "description": "FFmpeg executable name or absolute path.",
+      "defaultValue": "ffmpeg"
+    }
+  ]
+}

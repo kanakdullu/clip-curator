@@ -1,0 +1,80 @@
+import { memo, useCallback } from 'react'
+import type { ChangeEvent } from 'react'
+import type { UploadFeedback } from '../types/upload'
+import { formatFileSize } from '../utils/uploadUtils'
+
+interface UploadPanelProps {
+    selectedFile: File | null
+    isUploading: boolean
+    feedback: UploadFeedback | null
+    onFileSelected: (file: File | null) => void
+    onStartUpload: () => void
+}
+
+function UploadPanelComponent({
+    selectedFile,
+    isUploading,
+    feedback,
+    onFileSelected,
+    onStartUpload,
+}: UploadPanelProps) {
+    const handleFileChange = useCallback(
+        (event: ChangeEvent<HTMLInputElement>) => {
+            const nextFile = event.target.files?.[0] ?? null
+            onFileSelected(nextFile)
+
+            // Clear the input value so selecting the same file again still triggers change.
+            event.target.value = ''
+        },
+        [onFileSelected],
+    )
+
+    return (
+        <section className="upload-panel">
+            <div className="panel-heading upload-heading">
+                <h2>Upload Clip</h2>
+                <p>MP4 or MOV, max 2 GB</p>
+            </div>
+
+            <div className="upload-controls">
+                <label className="upload-input-wrap">
+                    <span className="upload-input-label">Select file</span>
+                    <input
+                        type="file"
+                        accept="video/mp4,video/quicktime,.mp4,.mov"
+                        onChange={handleFileChange}
+                        disabled={isUploading}
+                    />
+                </label>
+
+                <button
+                    type="button"
+                    className="upload-button"
+                    onClick={onStartUpload}
+                    disabled={isUploading || !selectedFile}
+                >
+                    {isUploading ? 'Uploading...' : 'Upload Video'}
+                </button>
+            </div>
+
+            {selectedFile ? (
+                <p className="upload-file-meta">
+                    {selectedFile.name} | {formatFileSize(selectedFile.size)}
+                </p>
+            ) : (
+                <p className="upload-hint">Pick a video file to publish and queue processing.</p>
+            )}
+
+            {feedback ? <p className={`upload-status ${feedback.kind}`}>{feedback.message}</p> : null}
+
+            {feedback?.mediaAssetId ? (
+                <p className="upload-asset-meta">
+                    Asset ID: {feedback.mediaAssetId}
+                    {feedback.status ? ` | Status: ${feedback.status}` : ''}
+                </p>
+            ) : null}
+        </section>
+    )
+}
+
+export const UploadPanel = memo(UploadPanelComponent)

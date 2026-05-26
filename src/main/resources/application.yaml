@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: clip-curator
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/clipcuratordb}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      "[hibernate.format_sql]": true
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      repositories:
+        enabled: false
+
+app:
+  aws:
+    region: ${AWS_REGION:us-east-1}
+    s3:
+      bucket: ${CLIPCURATOR_S3_BUCKET:clipcurator-dev-bucket}
+  huggingface:
+    api-token: ${HUGGINGFACE_API_TOKEN}
+    whisper-url: https://api-inference.huggingface.co/models/openai/whisper-large-v3
+    clip-url: https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32
+  pinecone:
+    api-key: ${PINECONE_API_KEY}
+    index-name: ${PINECONE_INDEX_NAME:clipcurator-index}
+    namespace: ${PINECONE_NAMESPACE:default}
+  processing:
+    tmp-dir: ${CLIPCURATOR_TMP_DIR:/tmp/clipcurator/assets}
+    ffmpeg:
+      command: ${FFMPEG_COMMAND:ffmpeg}
