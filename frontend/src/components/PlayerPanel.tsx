@@ -1,50 +1,49 @@
-import { memo, useCallback } from 'react'
 import type { RefObject } from 'react'
-import ReactPlayer from 'react-player'
+import type ReactPlayerType from 'react-player'
+import ReactPlayerImport from 'react-player/lazy'
 import type { SearchResult } from '../types/search'
 import { formatScore, formatTimestamp } from '../utils/searchUtils'
 
+const ReactPlayerComponent =
+    (ReactPlayerImport as unknown as { default?: typeof ReactPlayerType }).default ??
+    (ReactPlayerImport as unknown as typeof ReactPlayerType)
+
 interface PlayerPanelProps {
-    playerRef: RefObject<ReactPlayer | null>
+    playerRef: RefObject<ReactPlayerType | null>
     selectedResult: SearchResult | null
     selectedVideoUrl: string | null
+    selectedFallbackLabel: string | null
     playbackSeconds: number
     onPlayerReady: () => void
     onPlaybackSeconds: (seconds: number) => void
 }
 
-function PlayerPanelComponent({
+export function PlayerPanel({
     playerRef,
     selectedResult,
     selectedVideoUrl,
+    selectedFallbackLabel,
     playbackSeconds,
     onPlayerReady,
     onPlaybackSeconds,
 }: PlayerPanelProps) {
-    const handleProgress = useCallback(
-        (state: { playedSeconds: number }) => {
-            onPlaybackSeconds(state.playedSeconds)
-        },
-        [onPlaybackSeconds],
-    )
-
     return (
         <section className="player-panel">
             <div className="panel-heading">
                 <h2>Playback</h2>
-                <p>{selectedResult ? `Asset ${selectedResult.mediaAssetId}` : 'No selection yet'}</p>
+                <p>{selectedResult ? `Asset ${selectedResult.mediaAssetId}` : selectedFallbackLabel ?? 'No selection yet'}</p>
             </div>
 
             <div className="player-frame">
                 {selectedVideoUrl ? (
-                    <ReactPlayer
+                    <ReactPlayerComponent
                         ref={playerRef}
                         url={selectedVideoUrl}
                         controls
                         width="100%"
                         height="100%"
                         onReady={onPlayerReady}
-                        onProgress={handleProgress}
+                        onProgress={(state) => onPlaybackSeconds(state.playedSeconds)}
                     />
                 ) : (
                     <div className="player-placeholder">
@@ -66,5 +65,3 @@ function PlayerPanelComponent({
         </section>
     )
 }
-
-export const PlayerPanel = memo(PlayerPanelComponent)

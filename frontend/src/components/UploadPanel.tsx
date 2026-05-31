@@ -1,4 +1,3 @@
-import { memo, useCallback } from 'react'
 import type { ChangeEvent } from 'react'
 import type { UploadFeedback } from '../types/upload'
 import { formatFileSize } from '../utils/uploadUtils'
@@ -6,28 +5,30 @@ import { formatFileSize } from '../utils/uploadUtils'
 interface UploadPanelProps {
     selectedFile: File | null
     isUploading: boolean
+    uploadProgressPercent: number
     feedback: UploadFeedback | null
     onFileSelected: (file: File | null) => void
     onStartUpload: () => void
 }
 
-function UploadPanelComponent({
+export function UploadPanel({
     selectedFile,
     isUploading,
+    uploadProgressPercent,
     feedback,
     onFileSelected,
     onStartUpload,
 }: UploadPanelProps) {
-    const handleFileChange = useCallback(
-        (event: ChangeEvent<HTMLInputElement>) => {
-            const nextFile = event.target.files?.[0] ?? null
-            onFileSelected(nextFile)
+    const clampedProgress = Math.max(0, Math.min(100, uploadProgressPercent))
+    const showProgress = isUploading || clampedProgress > 0 || feedback?.kind === 'success'
 
-            // Clear the input value so selecting the same file again still triggers change.
-            event.target.value = ''
-        },
-        [onFileSelected],
-    )
+    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const nextFile = event.target.files?.[0] ?? null
+        onFileSelected(nextFile)
+
+        // Clear the input value so selecting the same file again still triggers change.
+        event.target.value = ''
+    }
 
     return (
         <section className="upload-panel">
@@ -65,6 +66,18 @@ function UploadPanelComponent({
                 <p className="upload-hint">Pick a video file to publish and queue processing.</p>
             )}
 
+            {showProgress ? (
+                <div className="upload-progress" role="status" aria-live="polite">
+                    <div className="upload-progress-header">
+                        <span>Transfer progress</span>
+                        <span>{clampedProgress}%</span>
+                    </div>
+                    <div className="upload-progress-track" aria-hidden="true">
+                        <div className="upload-progress-bar" style={{ width: `${clampedProgress}%` }} />
+                    </div>
+                </div>
+            ) : null}
+
             {feedback ? <p className={`upload-status ${feedback.kind}`}>{feedback.message}</p> : null}
 
             {feedback?.mediaAssetId ? (
@@ -76,5 +89,3 @@ function UploadPanelComponent({
         </section>
     )
 }
-
-export const UploadPanel = memo(UploadPanelComponent)

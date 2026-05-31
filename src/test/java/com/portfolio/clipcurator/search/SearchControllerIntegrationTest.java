@@ -55,6 +55,8 @@ class SearchControllerIntegrationTest {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.data.redis.repositories.enabled", () -> "false");
+                registry.add("app.search.top-k", () -> "50");
+                registry.add("app.search.minimum-score", () -> "0.15");
     }
 
     @Autowired
@@ -89,75 +91,103 @@ class SearchControllerIntegrationTest {
     }
 
     @Test
-    void searchShouldHydrateAudioAndVisualMatchesSortedByScore() throws Exception {
-        MediaAsset mediaAsset = new MediaAsset(
+    void searchShouldReturnVideosSortedByBestSimilarityAcrossAudioAndVisualMatches() throws Exception {
+        MediaAsset mediaAssetA = new MediaAsset(
                 null,
-                "demo.mp4",
-                "s3://clipcurator-dev-bucket/raw/asset/demo.mp4",
+                "demo-a.mp4",
+                "s3://clipcurator-dev-bucket/raw/asset/demo-a.mp4",
                 AssetStatus.COMPLETED,
                 null
         );
-        mediaAssetRepository.save(mediaAsset);
+        mediaAssetRepository.save(mediaAssetA);
 
-        UUID audioId = UUID.randomUUID();
-        UUID visualId = UUID.randomUUID();
+        MediaAsset mediaAssetB = new MediaAsset(
+                null,
+                "demo-b.mp4",
+                "s3://clipcurator-dev-bucket/raw/asset/demo-b.mp4",
+                AssetStatus.COMPLETED,
+                null
+        );
+        mediaAssetRepository.save(mediaAssetB);
 
-        Transcript transcript = new Transcript(
-                audioId,
-                mediaAsset,
+        UUID audioIdA = UUID.randomUUID();
+        UUID visualIdA = UUID.randomUUID();
+        UUID audioIdB = UUID.randomUUID();
+
+        Transcript transcriptA = new Transcript(
+                audioIdA,
+                mediaAssetA,
                 new BigDecimal("12.500"),
                 new BigDecimal("14.100"),
                 "We are deploying to AWS."
         );
-        transcriptRepository.save(transcript);
+        transcriptRepository.save(transcriptA);
 
-        VisualFrame visualFrame = new VisualFrame(
-                visualId,
-                mediaAsset,
-                new BigDecimal("10.000"),
-                "s3://clipcurator-dev-bucket/frames/asset/0005.jpg"
+        Transcript transcriptB = new Transcript(
+                audioIdB,
+                mediaAssetB,
+                new BigDecimal("3.250"),
+                new BigDecimal("5.100"),
+                "Two people are speaking in a room."
         );
-        visualFrameRepository.save(visualFrame);
+        transcriptRepository.save(transcriptB);
+
+        VisualFrame visualFrameA = new VisualFrame(
+                visualIdA,
+                mediaAssetA,
+                new BigDecimal("10.000"),
+                "s3://clipcurator-dev-bucket/frames/asset-a/0005.jpg"
+        );
+        visualFrameRepository.save(visualFrameA);
 
         List<Float> embedding = new ArrayList<>(Collections.nCopies(512, 0.1f));
         when(aiService.getEmbedding("basketball")).thenReturn(embedding);
-        when(pineconeVectorService.queryTopMatches(eq(embedding), eq(15), eq(0.25f)))
+        when(pineconeVectorService.queryTopMatches(eq(embedding), eq(50), eq(0.15f)))
                 .thenReturn(List.of(
                         new PineconeVectorService.VectorMatch(
-                                visualId.toString(),
+                                visualIdA.toString(),
                                 0.91f,
                                 "visual",
-                                mediaAsset.getId().toString()
+                                mediaAssetA.getId().toString()
                         ),
                         new PineconeVectorService.VectorMatch(
-                                audioId.toString(),
+                                audioIdA.toString(),
                                 0.87f,
                                 "audio",
-                                mediaAsset.getId().toString()
+                                mediaAssetA.getId().toString()
+                        ),
+                        new PineconeVectorService.VectorMatch(
+                                audioIdB.toString(),
+                                0.82f,
+                                "audio",
+                                mediaAssetB.getId().toString()
                         )
                 ));
 
-        when(storageService.generatePresignedGetUrl(mediaAsset.getS3Url()))
-                .thenReturn("https://signed.example/video");
-        when(storageService.generatePresignedGetUrl(visualFrame.getS3ImageUrl()))
-                .thenReturn("https://signed.example/frame");
+        when(storageService.generatePresignedGetUrl(mediaAssetA.getS3Url()))
+                .thenReturn("https://signed.example/video-a");
+        when(storageService.generatePresignedGetUrl(mediaAssetB.getS3Url()))
+                .thenReturn("https://signed.example/video-b");
+        when(storageService.generatePresignedGetUrl(visualFrameA.getS3ImageUrl()))
+                .thenReturn("https://signed.example/frame-a");
 
         mockMvc.perform(get("/api/v1/search").param("q", "basketball"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].mediaAssetId").value(mediaAsset.getId().toString()))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].mediaAssetId").value(mediaAssetA.getId().toString()))
                 .andExpect(jsonPath("$[0].matchType").value("visual"))
                 .andExpect(jsonPath("$[0].similarityScore").value(0.91))
                 .andExpect(jsonPath("$[0].timestamp").value(10.000))
                 .andExpect(jsonPath("$[0].contentSnippet").value(nullValue()))
-                .andExpect(jsonPath("$[0].s3ThumbnailUrl").value("https://signed.example/frame"))
-                .andExpect(jsonPath("$[0].s3VideoUrl").value("https://signed.example/video"))
-                .andExpect(jsonPath("$[1].mediaAssetId").value(mediaAsset.getId().toString()))
+                .andExpect(jsonPath("$[0].s3ThumbnailUrl").value("https://signed.example/frame-a"))
+                .andExpect(jsonPath("$[0].s3VideoUrl").value("https://signed.example/video-a"))
+                .andExpect(jsonPath("$[1].mediaAssetId").value(mediaAssetB.getId().toString()))
                 .andExpect(jsonPath("$[1].matchType").value("audio"))
-                .andExpect(jsonPath("$[1].similarityScore").value(0.87))
-                .andExpect(jsonPath("$[1].timestamp").value(12.500))
-                .andExpect(jsonPath("$[1].contentSnippet").value("We are deploying to AWS."))
-                .andExpect(jsonPath("$[1].s3ThumbnailUrl").value("https://signed.example/video"))
-                .andExpect(jsonPath("$[1].s3VideoUrl").value("https://signed.example/video"));
+                .andExpect(jsonPath("$[1].similarityScore").value(0.82))
+                .andExpect(jsonPath("$[1].timestamp").value(3.250))
+                .andExpect(jsonPath("$[1].contentSnippet").value("Two people are speaking in a room."))
+                .andExpect(jsonPath("$[1].s3ThumbnailUrl").value("https://signed.example/video-b"))
+                .andExpect(jsonPath("$[1].s3VideoUrl").value("https://signed.example/video-b"));
     }
 
     @Test

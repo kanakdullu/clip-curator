@@ -19,14 +19,19 @@ import org.springframework.util.FileSystemUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class VideoProcessingPipelineService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(VideoProcessingPipelineService.class);
+    private static final Set<String> IMAGE_EXTENSIONS = Set.of(
+            "jpg", "jpeg", "png", "gif", "bmp", "webp", "heic", "heif", "avif", "tif", "tiff"
+    );
 
     private final MediaAssetRepository mediaAssetRepository;
     private final TranscriptRepository transcriptRepository;
@@ -80,17 +85,14 @@ public class VideoProcessingPipelineService {
             Path audioPath = workingDirectory.resolve("audio.mp3");
             Path framesDirectory = workingDirectory.resolve("output_frames");
 
-            ffmpegService.extractAudio(localVideo, audioPath);
-                List<Path> framePaths = ffmpegService.extractFrames(localVideo, framesDirectory);
+            List<Path> framePaths = ffmpegService.extractFrames(localVideo, framesDirectory);
+            int transcriptCount = extractAndPersistAudioSegments(mediaAsset, localVideo, audioPath);
+            int frameCount = persistVisualFrames(mediaAsset, framePaths);
 
-                List<TranscriptSegment> transcriptSegments = aiService.transcribe(audioPath.toFile());
-                int transcriptCount = persistAudioSegments(mediaAsset, transcriptSegments);
-                int frameCount = persistVisualFrames(mediaAsset, framePaths);
+            mediaAsset.setStatus(AssetStatus.COMPLETED);
+            mediaAssetRepository.save(mediaAsset);
 
-                mediaAsset.setStatus(AssetStatus.COMPLETED);
-                mediaAssetRepository.save(mediaAsset);
-
-                LOGGER.info("Video processing complete for mediaAssetId={} (audioSegments={}, frames={})",
+            LOGGER.info("Video processing complete for mediaAssetId={} (audioSegments={}, frames={})",
                     mediaAssetId,
                     transcriptCount,
                     frameCount);
@@ -109,6 +111,42 @@ public class VideoProcessingPipelineService {
                 }
             }
         }
+    }
+
+    private int extractAndPersistAudioSegments(MediaAsset mediaAsset, Path localVideo, Path audioPath) {
+        if (isImageAsset(mediaAsset.getFilename())) {
+            LOGGER.info("Image asset detected for mediaAssetId={}, skipping transcript extraction.", mediaAsset.getId());
+            return 0;
+        }
+
+        if (!ffmpegService.hasAudioStream(localVideo)) {
+            LOGGER.info("No audio stream found for mediaAssetId={}, skipping transcript extraction.", mediaAsset.getId());
+            return 0;
+        }
+
+        ffmpegService.extractAudio(localVideo, audioPath);
+
+        List<TranscriptSegment> transcriptSegments = aiService.transcribe(audioPath.toFile());
+        return persistAudioSegments(mediaAsset, transcriptSegments);
+    }
+
+    private boolean isImageAsset(String filename) {
+        String extension = resolveFileExtension(filename);
+        return !extension.isBlank() && IMAGE_EXTENSIONS.contains(extension);
+    }
+
+    private String resolveFileExtension(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return "";
+        }
+
+        String normalizedFilename = filename.trim();
+        int extensionIndex = normalizedFilename.lastIndexOf('.');
+        if (extensionIndex < 0 || extensionIndex == normalizedFilename.length() - 1) {
+            return "";
+        }
+
+        return normalizedFilename.substring(extensionIndex + 1).toLowerCase(Locale.ROOT);
     }
 
     private int persistAudioSegments(MediaAsset mediaAsset, List<TranscriptSegment> transcriptSegments) {

@@ -1,4 +1,3 @@
-import { memo } from 'react'
 import type { SearchResult } from '../types/search'
 import { ResultCard } from './ResultCard'
 
@@ -9,7 +8,7 @@ interface ResultsPanelProps {
     onSelectResult: (index: number) => void
 }
 
-function ResultsPanelComponent({ results, selectedIndex, error, onSelectResult }: ResultsPanelProps) {
+export function ResultsPanel({ results, selectedIndex, error, onSelectResult }: ResultsPanelProps) {
     return (
         <section className="results-panel">
             <div className="panel-heading">
@@ -39,5 +38,3 @@ function ResultsPanelComponent({ results, selectedIndex, error, onSelectResult }
         </section>
     )
 }
-
-export const ResultsPanel = memo(ResultsPanelComponent)

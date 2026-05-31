@@ -1,4 +1,3 @@
-import { memo, useCallback } from 'react'
 import type { SearchResult } from '../types/search'
 import { formatScore, formatTimestamp } from '../utils/searchUtils'
 
@@ -9,19 +8,15 @@ interface ResultCardProps {
     onSelect: (index: number) => void
 }
 
-function ResultCardComponent({ index, result, isSelected, onSelect }: ResultCardProps) {
+export function ResultCard({ index, result, isSelected, onSelect }: ResultCardProps) {
     const label = `${result.matchType} match at ${formatTimestamp(Number(result.timestamp))}`
-
-    const handleSelect = useCallback(() => {
-        onSelect(index)
-    }, [index, onSelect])
 
     return (
         <li>
             <button
                 type="button"
                 className={`result-card ${isSelected ? 'selected' : ''}`}
-                onClick={handleSelect}
+                onClick={() => onSelect(index)}
                 aria-label={label}
             >
                 <div className="thumb-wrap">
@@ -38,5 +33,3 @@ function ResultCardComponent({ index, result, isSelected, onSelect }: ResultCard
         </li>
     )
 }
-
-export const ResultCard = memo(ResultCardComponent)

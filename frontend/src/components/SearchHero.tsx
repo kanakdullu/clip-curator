@@ -1,4 +1,3 @@
-import { memo } from 'react'
 import type { FormEvent } from 'react'
 
 interface SearchHeroProps {
@@ -8,7 +7,7 @@ interface SearchHeroProps {
     onQueryChange: (value: string) => void
 }
 
-function SearchHeroComponent({ query, isLoading, onSubmit, onQueryChange }: SearchHeroProps) {
+export function SearchHero({ query, isLoading, onSubmit, onQueryChange }: SearchHeroProps) {
     return (
         <section className="hero-panel">
             <h1>Find the exact second a scene happens</h1>
@@ -32,5 +31,3 @@ function SearchHeroComponent({ query, isLoading, onSubmit, onQueryChange }: Sear
         </section>
     )
 }
-
-export const SearchHero = memo(SearchHeroComponent)

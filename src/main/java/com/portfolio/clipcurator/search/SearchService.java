@@ -7,6 +7,7 @@ import com.portfolio.clipcurator.media.VisualFrame;
 import com.portfolio.clipcurator.media.VisualFrameRepository;
 import com.portfolio.clipcurator.storage.StorageService;
 import com.portfolio.clipcurator.vector.PineconeVectorService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -23,27 +24,30 @@ import java.util.stream.Collectors;
 @Service
 public class SearchService {
 
-    private static final int TOP_K = 15;
-    private static final float MINIMUM_SCORE = 0.25f;
-
     private final AiService aiService;
     private final PineconeVectorService pineconeVectorService;
     private final TranscriptRepository transcriptRepository;
     private final VisualFrameRepository visualFrameRepository;
     private final StorageService storageService;
+    private final int topK;
+    private final float minimumScore;
 
     public SearchService(
             AiService aiService,
             PineconeVectorService pineconeVectorService,
             TranscriptRepository transcriptRepository,
             VisualFrameRepository visualFrameRepository,
-            StorageService storageService
+            StorageService storageService,
+            @Value("${app.search.top-k:50}") int topK,
+            @Value("${app.search.minimum-score:0.15}") float minimumScore
     ) {
         this.aiService = aiService;
         this.pineconeVectorService = pineconeVectorService;
         this.transcriptRepository = transcriptRepository;
         this.visualFrameRepository = visualFrameRepository;
         this.storageService = storageService;
+        this.topK = normalizeTopK(topK);
+        this.minimumScore = normalizeMinimumScore(minimumScore);
     }
 
     public List<SearchResultDto> search(String query) {
@@ -52,8 +56,8 @@ public class SearchService {
 
         List<PineconeVectorService.VectorMatch> vectorMatches = pineconeVectorService.queryTopMatches(
                 queryEmbedding,
-                TOP_K,
-                MINIMUM_SCORE
+            topK,
+            minimumScore
         );
 
         if (vectorMatches.isEmpty()) {
@@ -114,7 +118,13 @@ public class SearchService {
         }
 
         hydratedResults.sort(Comparator.comparing(SearchResultDto::similarityScore).reversed());
-        return hydratedResults;
+
+        Map<UUID, SearchResultDto> bestMatchPerAsset = new LinkedHashMap<>();
+        for (SearchResultDto hydratedResult : hydratedResults) {
+            bestMatchPerAsset.putIfAbsent(hydratedResult.mediaAssetId(), hydratedResult);
+        }
+
+        return new ArrayList<>(bestMatchPerAsset.values());
     }
 
     private String normalizeQuery(String query) {
@@ -134,5 +144,19 @@ public class SearchService {
         } catch (IllegalArgumentException ex) {
             return null;
         }
+    }
+
+    private int normalizeTopK(int configuredTopK) {
+        if (configuredTopK < 1) {
+            throw new IllegalStateException("app.search.top-k must be greater than 0.");
+        }
+        return configuredTopK;
+    }
+
+    private float normalizeMinimumScore(float configuredMinimumScore) {
+        if (configuredMinimumScore < 0f || configuredMinimumScore > 1f) {
+            throw new IllegalStateException("app.search.minimum-score must be between 0 and 1.");
+        }
+        return configuredMinimumScore;
     }
 }

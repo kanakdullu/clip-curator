@@ -1,6 +1,4 @@
-import { memo } from 'react'
-
-function TopBarComponent() {
+export function TopBar() {
     return (
         <header className="topbar">
             <div className="brand-mark">
@@ -11,5 +9,3 @@ function TopBarComponent() {
         </header>
     )
 }
-
-export const TopBar = memo(TopBarComponent)

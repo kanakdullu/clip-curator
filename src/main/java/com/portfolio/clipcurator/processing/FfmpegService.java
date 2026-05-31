@@ -15,9 +15,35 @@ import java.util.stream.Stream;
 public class FfmpegService {
 
     private final String ffmpegCommand;
+    private final String ffprobeCommand;
+    private final String frameSamplingFps;
 
-    public FfmpegService(@Value("${app.processing.ffmpeg.command:ffmpeg}") String ffmpegCommand) {
+    public FfmpegService(
+            @Value("${app.processing.ffmpeg.command:ffmpeg}") String ffmpegCommand,
+            @Value("${app.processing.ffprobe.command:ffprobe}") String ffprobeCommand,
+            @Value("${app.processing.frame-sampling-fps:1.0}") String frameSamplingFps
+    ) {
         this.ffmpegCommand = ffmpegCommand;
+        this.ffprobeCommand = ffprobeCommand;
+        this.frameSamplingFps = requireNonBlank(frameSamplingFps, "app.processing.frame-sampling-fps");
+    }
+
+    public boolean hasAudioStream(Path inputMedia) {
+        CommandResult commandResult = runCommand(List.of(
+                ffprobeCommand,
+                "-v", "error",
+                "-select_streams", "a",
+                "-show_entries", "stream=index",
+                "-of", "csv=p=0",
+                inputMedia.toAbsolutePath().toString()
+        ), false);
+
+        if (commandResult.exitCode() != 0) {
+            throw new IllegalStateException("FFprobe command failed with exit code "
+                    + commandResult.exitCode() + ": " + commandResult.output());
+        }
+
+        return !commandResult.output().isBlank();
     }
 
     public Path extractAudio(Path inputVideo, Path outputAudio) {
@@ -47,7 +73,7 @@ public class FfmpegService {
                 ffmpegCommand,
                 "-y",
                 "-i", inputVideo.toAbsolutePath().toString(),
-                "-vf", "fps=0.5",
+            "-vf", "fps=" + frameSamplingFps,
                 outputPattern
         ));
 
@@ -62,6 +88,10 @@ public class FfmpegService {
     }
 
     private void runCommand(List<String> command) {
+        runCommand(command, true);
+    }
+
+    private CommandResult runCommand(List<String> command, boolean failOnNonZeroExitCode) {
         ProcessBuilder processBuilder = new ProcessBuilder(command)
                 .redirectErrorStream(true);
 
@@ -73,14 +103,25 @@ public class FfmpegService {
             }
 
             int exitCode = process.waitFor();
-            if (exitCode != 0) {
+            if (failOnNonZeroExitCode && exitCode != 0) {
                 throw new IllegalStateException("FFmpeg command failed with exit code " + exitCode + ": " + output);
             }
+            return new CommandResult(exitCode, output);
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to execute FFmpeg command.", ex);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("FFmpeg command interrupted.", ex);
         }
+    }
+
+    private record CommandResult(int exitCode, String output) {
+    }
+
+    private String requireNonBlank(String value, String propertyName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Required configuration is missing: " + propertyName);
+        }
+        return value;
     }
 }

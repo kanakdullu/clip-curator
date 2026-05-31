@@ -59,3 +59,44 @@ export const getApiErrorMessage = async (response: Response, fallbackMessage: st
         return fallback
     }
 }
+
+export const uploadFileWithProgress = (
+    uploadUrl: string,
+    file: File,
+    mimeType: string,
+    onProgress: (fraction: number) => void,
+): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        const request = new XMLHttpRequest()
+        request.open('PUT', uploadUrl)
+        request.setRequestHeader('Content-Type', mimeType)
+
+        request.upload.onprogress = (event) => {
+            if (!event.lengthComputable || event.total <= 0) {
+                return
+            }
+
+            onProgress(event.loaded / event.total)
+        }
+
+        request.onerror = () => {
+            reject(new Error('Upload to storage failed due to a network error.'))
+        }
+
+        request.onabort = () => {
+            reject(new Error('Upload was canceled.'))
+        }
+
+        request.onload = () => {
+            if (request.status >= 200 && request.status < 300) {
+                onProgress(1)
+                resolve()
+                return
+            }
+
+            reject(new Error(`Upload to storage failed with status ${request.status}.`))
+        }
+
+        request.send(file)
+    })
+}
