@@ -26,7 +26,7 @@ app:
       bucket: ${CLIPCURATOR_S3_BUCKET:clip-curator}
   huggingface:
     api-token: local-dev-token
-    whisper-url: http://127.0.0.1:8000/models/openai/whisper-large-v3
+    whisper-url: http://127.0.0.1:8000/models/openai/whisper-transcribe
     clip-url: http://127.0.0.1:8000/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32
   pinecone:
     api-key: ${PINECONE_API_KEY:pcsk_3sJird_MagRZkwiwuPVdAZhD5JLMC5PvRiejDDTfvpPcNuNoFqeqkq9P5ixNnEpWgeLqQR}

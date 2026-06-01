@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from transformers import pipeline
 
-WHISPER_MODEL_NAME = "openai/whisper-base"
+WHISPER_MODEL_NAME = os.getenv("WHISPER_MODEL_NAME", "openai/whisper-medium.en")
 CLIP_MODEL_NAME = "clip-ViT-B-32"
 
 
@@ -57,6 +57,7 @@ def load_models() -> None:
         device=resolve_whisper_device(DEVICE),
     )
     clip_model = SentenceTransformer(CLIP_MODEL_NAME, device=DEVICE)
+    print("Using device - ", DEVICE)
 
 
 @app.get("/health")
@@ -69,7 +70,7 @@ def health() -> dict[str, str]:
     }
 
 
-@app.post("/models/openai/whisper-large-v3")
+@app.post("/models/openai/whisper-transcribe")
 def transcribe_audio(request: InferenceRequest) -> dict[str, Any]:
     ensure_models_loaded()
 
