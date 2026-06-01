@@ -29,6 +29,8 @@ import java.util.UUID;
 public class VideoProcessingPipelineService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(VideoProcessingPipelineService.class);
+    private static final int MAX_TRANSCRIPT_EMBEDDING_CHARACTERS = 150;
+    private static final int MIN_EMBEDDING_WORD_BOUNDARY_INDEX = 90;
     private static final Set<String> IMAGE_EXTENSIONS = Set.of(
             "jpg", "jpeg", "png", "gif", "bmp", "webp", "heic", "heif", "avif", "tif", "tiff"
     );
@@ -40,6 +42,7 @@ public class VideoProcessingPipelineService {
     private final FfmpegService ffmpegService;
     private final AiService aiService;
     private final PineconeVectorService pineconeVectorService;
+    private final ProcessingStatusSseService processingStatusSseService;
 
     public VideoProcessingPipelineService(
             MediaAssetRepository mediaAssetRepository,
@@ -48,7 +51,8 @@ public class VideoProcessingPipelineService {
             StorageService storageService,
             FfmpegService ffmpegService,
             AiService aiService,
-            PineconeVectorService pineconeVectorService
+            PineconeVectorService pineconeVectorService,
+            ProcessingStatusSseService processingStatusSseService
     ) {
         this.mediaAssetRepository = mediaAssetRepository;
         this.transcriptRepository = transcriptRepository;
@@ -57,6 +61,7 @@ public class VideoProcessingPipelineService {
         this.ffmpegService = ffmpegService;
         this.aiService = aiService;
         this.pineconeVectorService = pineconeVectorService;
+        this.processingStatusSseService = processingStatusSseService;
     }
 
     public void process(UUID mediaAssetId) {
@@ -77,6 +82,7 @@ public class VideoProcessingPipelineService {
             if (mediaAsset.getStatus() == AssetStatus.PENDING) {
                 mediaAsset.setStatus(AssetStatus.PROCESSING);
                 mediaAssetRepository.save(mediaAsset);
+                processingStatusSseService.publishStatus(requiredMediaAssetId, AssetStatus.PROCESSING, "Video processing");
             }
 
             Path localVideo = storageService.downloadVideoToLocal(requiredMediaAssetId, mediaAsset.getS3Url());
@@ -91,6 +97,7 @@ public class VideoProcessingPipelineService {
 
             mediaAsset.setStatus(AssetStatus.COMPLETED);
             mediaAssetRepository.save(mediaAsset);
+            processingStatusSseService.publishStatus(requiredMediaAssetId, AssetStatus.COMPLETED, "Video processing complete");
 
             LOGGER.info("Video processing complete for mediaAssetId={} (audioSegments={}, frames={})",
                     mediaAssetId,
@@ -99,6 +106,7 @@ public class VideoProcessingPipelineService {
         } catch (Exception ex) {
             mediaAsset.setStatus(AssetStatus.FAILED);
             mediaAssetRepository.save(mediaAsset);
+            processingStatusSseService.publishStatus(requiredMediaAssetId, AssetStatus.FAILED, "Video processing failed");
             LOGGER.error("Video processing failed for mediaAssetId={}", requiredMediaAssetId, ex);
         } finally {
             if (workingDirectory != null) {
@@ -153,20 +161,55 @@ public class VideoProcessingPipelineService {
         int count = 0;
         for (TranscriptSegment segment : transcriptSegments) {
             UUID transcriptId = UUID.randomUUID();
+            String originalContent = segment.content();
             Transcript transcript = new Transcript(
                     transcriptId,
                     mediaAsset,
                     segment.startTime(),
                     segment.endTime(),
-                    segment.content()
+                    originalContent
             );
             transcriptRepository.save(transcript);
 
-            List<Float> embedding = aiService.getEmbedding(segment.content());
+            String embeddingInput = normalizeTranscriptForEmbedding(originalContent);
+            if (embeddingInput.isBlank()) {
+                LOGGER.debug("Skipping transcript embedding for mediaAssetId={} transcriptId={} because normalized transcript text is empty.",
+                        mediaAsset.getId(),
+                        transcriptId);
+                continue;
+            }
+
+            if (originalContent != null && originalContent.trim().length() > embeddingInput.length()) {
+                LOGGER.debug("Truncated transcript embedding text for mediaAssetId={} transcriptId={} from {} to {} characters.",
+                        mediaAsset.getId(),
+                        transcriptId,
+                        originalContent.trim().length(),
+                        embeddingInput.length());
+            }
+
+            List<Float> embedding = aiService.getEmbedding(embeddingInput);
             pineconeVectorService.upsert(transcriptId.toString(), embedding, "audio", mediaAsset.getId());
             count++;
         }
         return count;
+    }
+
+    private String normalizeTranscriptForEmbedding(String transcriptContent) {
+        if (transcriptContent == null) {
+            return "";
+        }
+
+        String normalized = transcriptContent.trim().replaceAll("\\s+", " ");
+        if (normalized.length() <= MAX_TRANSCRIPT_EMBEDDING_CHARACTERS) {
+            return normalized;
+        }
+
+        int boundaryIndex = normalized.lastIndexOf(' ', MAX_TRANSCRIPT_EMBEDDING_CHARACTERS);
+        if (boundaryIndex < MIN_EMBEDDING_WORD_BOUNDARY_INDEX) {
+            boundaryIndex = MAX_TRANSCRIPT_EMBEDDING_CHARACTERS;
+        }
+
+        return normalized.substring(0, boundaryIndex).trim();
     }
 
     private int persistVisualFrames(MediaAsset mediaAsset, List<Path> framePaths) {

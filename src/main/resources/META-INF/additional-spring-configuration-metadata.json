@@ -21,7 +21,7 @@
       "name": "app.huggingface.whisper-url",
       "type": "java.lang.String",
       "description": "Whisper inference endpoint URL.",
-      "defaultValue": "http://127.0.0.1:8000/models/openai/whisper-large-v3"
+      "defaultValue": "http://127.0.0.1:8000/models/openai/whisper-transcribe"
     },
     {
       "name": "app.huggingface.clip-url",

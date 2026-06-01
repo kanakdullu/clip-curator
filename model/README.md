@@ -4,13 +4,13 @@ This service runs Whisper and CLIP locally and exposes endpoints compatible with
 
 ## Models
 
-- Whisper: `openai/whisper-base`
+- Whisper: `openai/whisper-medium.en` (default)
 - CLIP: `clip-ViT-B-32`
 
 ## Endpoints
 
 - `GET /health`
-- `POST /models/openai/whisper-large-v3`
+- `POST /models/openai/whisper-transcribe`
   - Expects JSON: `{ "inputs": "<base64-audio>" }`
   - Returns JSON: `{ "segments": [{ "start": 0.0, "end": 1.2, "text": "..." }] }`
 - `POST /pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32`
@@ -32,3 +32,5 @@ This service runs Whisper and CLIP locally and exposes endpoints compatible with
 
 - On Apple Silicon host execution, this service uses MPS when available.
 - Ensure `ffmpeg` is installed on your machine for audio decoding.
+- Override Whisper model if needed via env var:
+   - `WHISPER_MODEL_NAME=openai/whisper-medium.en`

@@ -61,7 +61,6 @@ export function PlayerPanel({
                 </div>
             ) : null}
 
-            {selectedResult?.contentSnippet ? <p className="spoken-line">“{selectedResult.contentSnippet}”</p> : null}
         </section>
     )
 }

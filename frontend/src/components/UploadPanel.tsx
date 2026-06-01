@@ -1,12 +1,9 @@
 import type { ChangeEvent } from 'react'
-import type { UploadFeedback } from '../types/upload'
 import { formatFileSize } from '../utils/uploadUtils'
 
 interface UploadPanelProps {
     selectedFile: File | null
     isUploading: boolean
-    uploadProgressPercent: number
-    feedback: UploadFeedback | null
     onFileSelected: (file: File | null) => void
     onStartUpload: () => void
 }
@@ -14,14 +11,9 @@ interface UploadPanelProps {
 export function UploadPanel({
     selectedFile,
     isUploading,
-    uploadProgressPercent,
-    feedback,
     onFileSelected,
     onStartUpload,
 }: UploadPanelProps) {
-    const clampedProgress = Math.max(0, Math.min(100, uploadProgressPercent))
-    const showProgress = isUploading || clampedProgress > 0 || feedback?.kind === 'success'
-
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
         const nextFile = event.target.files?.[0] ?? null
         onFileSelected(nextFile)
@@ -65,27 +57,6 @@ export function UploadPanel({
             ) : (
                 <p className="upload-hint">Pick a video file to publish and queue processing.</p>
             )}
-
-            {showProgress ? (
-                <div className="upload-progress" role="status" aria-live="polite">
-                    <div className="upload-progress-header">
-                        <span>Transfer progress</span>
-                        <span>{clampedProgress}%</span>
-                    </div>
-                    <div className="upload-progress-track" aria-hidden="true">
-                        <div className="upload-progress-bar" style={{ width: `${clampedProgress}%` }} />
-                    </div>
-                </div>
-            ) : null}
-
-            {feedback ? <p className={`upload-status ${feedback.kind}`}>{feedback.message}</p> : null}
-
-            {feedback?.mediaAssetId ? (
-                <p className="upload-asset-meta">
-                    Asset ID: {feedback.mediaAssetId}
-                    {feedback.status ? ` | Status: ${feedback.status}` : ''}
-                </p>
-            ) : null}
         </section>
     )
 }

@@ -6,6 +6,7 @@ import com.portfolio.clipcurator.config.ProcessingConfig;
 import com.portfolio.clipcurator.media.AssetStatus;
 import com.portfolio.clipcurator.media.MediaAsset;
 import com.portfolio.clipcurator.media.MediaAssetRepository;
+import com.portfolio.clipcurator.processing.ProcessingStatusSseService;
 import com.portfolio.clipcurator.storage.PresignedUpload;
 import com.portfolio.clipcurator.storage.StorageService;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -30,17 +31,20 @@ public class UploadService {
     private final StorageService storageService;
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
+    private final ProcessingStatusSseService processingStatusSseService;
 
     public UploadService(
             MediaAssetRepository mediaAssetRepository,
             StorageService storageService,
             StringRedisTemplate stringRedisTemplate,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            ProcessingStatusSseService processingStatusSseService
     ) {
         this.mediaAssetRepository = mediaAssetRepository;
         this.storageService = storageService;
         this.stringRedisTemplate = stringRedisTemplate;
         this.objectMapper = objectMapper;
+        this.processingStatusSseService = processingStatusSseService;
     }
 
     @Transactional
@@ -87,7 +91,9 @@ public class UploadService {
         }
 
         mediaAsset.setStatus(AssetStatus.PROCESSING);
+        mediaAssetRepository.save(mediaAsset);
         publishProcessVideoEvent(mediaAsset.getId());
+        processingStatusSseService.publishStatus(mediaAsset.getId(), AssetStatus.PROCESSING, "Video processing");
 
         return new UploadConfirmResponse(
                 mediaAsset.getId(),

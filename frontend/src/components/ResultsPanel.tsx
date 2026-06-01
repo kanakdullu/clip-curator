@@ -1,14 +1,22 @@
+import type { CompletedAsset } from '../types/media'
 import type { SearchResult } from '../types/search'
 import { ResultCard } from './ResultCard'
 
 interface ResultsPanelProps {
     results: SearchResult[]
+    completedAssets: CompletedAsset[]
     selectedIndex: number | null
     error: string | null
     onSelectResult: (index: number) => void
 }
 
-export function ResultsPanel({ results, selectedIndex, error, onSelectResult }: ResultsPanelProps) {
+export function ResultsPanel({ results, completedAssets, selectedIndex, error, onSelectResult }: ResultsPanelProps) {
+    const fallbackThumbnailByAssetId = new Map(
+        completedAssets
+            .filter((asset) => Boolean(asset.s3ThumbnailUrl))
+            .map((asset) => [asset.mediaAssetId, asset.s3ThumbnailUrl]),
+    )
+
     return (
         <section className="results-panel">
             <div className="panel-heading">
@@ -30,6 +38,7 @@ export function ResultsPanel({ results, selectedIndex, error, onSelectResult }: 
                         key={`${result.mediaAssetId}-${index}`}
                         index={index}
                         result={result}
+                        fallbackThumbnailUrl={fallbackThumbnailByAssetId.get(result.mediaAssetId) ?? null}
                         isSelected={selectedIndex === index}
                         onSelect={onSelectResult}
                     />
