@@ -27,12 +27,12 @@ app:
     s3:
       bucket: ${CLIPCURATOR_S3_BUCKET:clip-curator}
   huggingface:
-    whisper-url: http://127.0.0.1:8000/models/openai/whisper-transcribe
-    clip-url: http://127.0.0.1:8000/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32
+    whisper-url: ${CLIPCURATOR_WHISPER_URL:http://127.0.0.1:8000/models/openai/whisper-transcribe}
+    clip-url: ${CLIPCURATOR_CLIP_URL:http://127.0.0.1:8000/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32}
   pinecone:
     api-key: ${PINECONE_API_KEY}
-    index-name: ${PINECONE_INDEX_NAME}
-    namespace: ${PINECONE_NAMESPACE}
+    index-name: ${PINECONE_INDEX_NAME:clipcurator-index}
+    namespace: ${PINECONE_NAMESPACE:default}
   search:
     top-k: ${CLIPCURATOR_SEARCH_TOP_K:50}
     minimum-score: ${CLIPCURATOR_SEARCH_MINIMUM_SCORE:0.15}
@@ -41,3 +41,5 @@ app:
     frame-sampling-fps: ${CLIPCURATOR_FRAME_SAMPLING_FPS:1.0}
     ffmpeg:
       command: ${FFMPEG_COMMAND:ffmpeg}
+    ffprobe:
+      command: ${FFPROBE_COMMAND:ffprobe}
