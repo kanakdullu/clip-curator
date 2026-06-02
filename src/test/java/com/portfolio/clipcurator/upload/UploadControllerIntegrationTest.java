@@ -122,6 +122,42 @@ class UploadControllerIntegrationTest {
         assertTrue(savedAsset.getS3Url().startsWith("s3://clipcurator-dev-bucket/raw/" + mediaAssetId + "/"));
     }
 
+        @Test
+        void initUploadShouldAcceptImageMimeType() throws Exception {
+        when(storageService.generateUploadUrl(any(UUID.class), eq("poster.jpg"), eq("image/jpeg")))
+            .thenAnswer(invocation -> {
+                UUID id = invocation.getArgument(0);
+                return new PresignedUpload(
+                    "https://example.com/upload/" + id,
+                    "raw/" + id + "/poster.jpg",
+                    "s3://clipcurator-dev-bucket/raw/" + id + "/poster.jpg"
+                );
+            });
+
+        String requestBody = """
+            {
+              "filename": "poster.jpg",
+              "mimeType": "image/jpeg",
+              "sizeInBytes": 2048
+            }
+            """;
+
+        MvcResult result = mockMvc.perform(post("/api/v1/upload/init")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.mediaAssetId").isNotEmpty())
+            .andExpect(jsonPath("$.uploadUrl").exists())
+            .andReturn();
+
+        JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
+        UUID mediaAssetId = UUID.fromString(response.get("mediaAssetId").asText());
+
+        MediaAsset savedAsset = mediaAssetRepository.findById(mediaAssetId).orElseThrow();
+        assertEquals(AssetStatus.PENDING, savedAsset.getStatus());
+        assertEquals("s3://clipcurator-dev-bucket/raw/" + mediaAssetId + "/poster.jpg", savedAsset.getS3Url());
+        }
+
     @Test
     void initUploadShouldRejectUnsupportedMimeType() throws Exception {
         String requestBody = """

@@ -24,7 +24,19 @@ import java.util.UUID;
 @Service
 public class UploadService {
 
-    private static final Set<String> SUPPORTED_MIME_TYPES = Set.of("video/mp4", "video/quicktime");
+    private static final Set<String> SUPPORTED_MIME_TYPES = Set.of(
+            "video/mp4",
+            "video/quicktime",
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/bmp",
+            "image/webp",
+            "image/heic",
+            "image/heif",
+            "image/avif",
+            "image/tiff"
+    );
     private static final long MAX_FILE_SIZE_BYTES = 2_147_483_648L;
 
     private final MediaAssetRepository mediaAssetRepository;
@@ -118,7 +130,7 @@ public class UploadService {
         String normalizedMimeType = request.mimeType().toLowerCase(Locale.ROOT);
         if (!SUPPORTED_MIME_TYPES.contains(normalizedMimeType)) {
             throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-                    "Only video/mp4 or video/quicktime is supported.");
+                    "Supported mime types: video/mp4, video/quicktime, image/jpeg, image/png, image/gif, image/bmp, image/webp, image/heic, image/heif, image/avif, image/tiff.");
         }
 
         if (request.sizeInBytes() == null || request.sizeInBytes() <= 0) {

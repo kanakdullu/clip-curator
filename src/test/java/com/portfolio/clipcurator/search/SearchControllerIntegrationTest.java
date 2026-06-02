@@ -91,7 +91,7 @@ class SearchControllerIntegrationTest {
     }
 
     @Test
-    void searchShouldReturnVideosSortedByBestSimilarityAcrossAudioAndVisualMatches() throws Exception {
+        void searchShouldReturnGroupedBestAudioAndBestVisualMatchesPerVideo() throws Exception {
         MediaAsset mediaAssetA = new MediaAsset(
                 null,
                 "demo-a.mp4",
@@ -175,19 +175,30 @@ class SearchControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].mediaAssetId").value(mediaAssetA.getId().toString()))
-                .andExpect(jsonPath("$[0].matchType").value("visual"))
-                .andExpect(jsonPath("$[0].similarityScore").value(0.91))
-                .andExpect(jsonPath("$[0].timestamp").value(10.000))
-                .andExpect(jsonPath("$[0].contentSnippet").value(nullValue()))
-                .andExpect(jsonPath("$[0].s3ThumbnailUrl").value("https://signed.example/frame-a"))
+                .andExpect(jsonPath("$[0].bestSimilarityScore").value(0.91))
                 .andExpect(jsonPath("$[0].s3VideoUrl").value("https://signed.example/video-a"))
+                .andExpect(jsonPath("$[0].bestAudioMatch.matchType").value("audio"))
+                .andExpect(jsonPath("$[0].bestAudioMatch.similarityScore").value(0.87))
+                .andExpect(jsonPath("$[0].bestAudioMatch.timestamp").value(12.500))
+                .andExpect(jsonPath("$[0].bestAudioMatch.contentSnippet").value("We are deploying to AWS."))
+                .andExpect(jsonPath("$[0].bestAudioMatch.s3ThumbnailUrl").value("https://signed.example/video-a"))
+                .andExpect(jsonPath("$[0].bestAudioMatch.s3VideoUrl").value("https://signed.example/video-a"))
+                .andExpect(jsonPath("$[0].bestVisualMatch.matchType").value("visual"))
+                .andExpect(jsonPath("$[0].bestVisualMatch.similarityScore").value(0.91))
+                .andExpect(jsonPath("$[0].bestVisualMatch.timestamp").value(10.000))
+                .andExpect(jsonPath("$[0].bestVisualMatch.contentSnippet").value(nullValue()))
+                .andExpect(jsonPath("$[0].bestVisualMatch.s3ThumbnailUrl").value("https://signed.example/frame-a"))
+                .andExpect(jsonPath("$[0].bestVisualMatch.s3VideoUrl").value("https://signed.example/video-a"))
                 .andExpect(jsonPath("$[1].mediaAssetId").value(mediaAssetB.getId().toString()))
-                .andExpect(jsonPath("$[1].matchType").value("audio"))
-                .andExpect(jsonPath("$[1].similarityScore").value(0.82))
-                .andExpect(jsonPath("$[1].timestamp").value(3.250))
-                .andExpect(jsonPath("$[1].contentSnippet").value("Two people are speaking in a room."))
-                .andExpect(jsonPath("$[1].s3ThumbnailUrl").value("https://signed.example/video-b"))
-                .andExpect(jsonPath("$[1].s3VideoUrl").value("https://signed.example/video-b"));
+                .andExpect(jsonPath("$[1].bestSimilarityScore").value(0.82))
+                .andExpect(jsonPath("$[1].s3VideoUrl").value("https://signed.example/video-b"))
+                .andExpect(jsonPath("$[1].bestAudioMatch.matchType").value("audio"))
+                .andExpect(jsonPath("$[1].bestAudioMatch.similarityScore").value(0.82))
+                .andExpect(jsonPath("$[1].bestAudioMatch.timestamp").value(3.250))
+                .andExpect(jsonPath("$[1].bestAudioMatch.contentSnippet").value("Two people are speaking in a room."))
+                .andExpect(jsonPath("$[1].bestAudioMatch.s3ThumbnailUrl").value("https://signed.example/video-b"))
+                .andExpect(jsonPath("$[1].bestAudioMatch.s3VideoUrl").value("https://signed.example/video-b"))
+                .andExpect(jsonPath("$[1].bestVisualMatch").value(nullValue()));
     }
 
     @Test

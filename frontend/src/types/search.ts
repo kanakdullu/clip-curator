@@ -9,3 +9,11 @@ export interface SearchResult {
     s3ThumbnailUrl: string
     s3VideoUrl?: string | null
 }
+
+export interface SearchResultGroup {
+    mediaAssetId: string
+    bestSimilarityScore: number
+    s3VideoUrl: string | null
+    bestAudioMatch: SearchResult | null
+    bestVisualMatch: SearchResult | null
+}

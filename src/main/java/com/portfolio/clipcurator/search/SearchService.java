@@ -50,7 +50,7 @@ public class SearchService {
         this.minimumScore = normalizeMinimumScore(minimumScore);
     }
 
-    public List<SearchResultDto> search(String query) {
+    public List<SearchResultGroupDto> search(String query) {
         String normalizedQuery = normalizeQuery(query);
         List<Float> queryEmbedding = aiService.getEmbedding(normalizedQuery);
 
@@ -119,12 +119,52 @@ public class SearchService {
 
         hydratedResults.sort(Comparator.comparing(SearchResultDto::similarityScore).reversed());
 
-        Map<UUID, SearchResultDto> bestMatchPerAsset = new LinkedHashMap<>();
+        Map<UUID, GroupedMatches> groupedMatchesByAssetId = new LinkedHashMap<>();
         for (SearchResultDto hydratedResult : hydratedResults) {
-            bestMatchPerAsset.putIfAbsent(hydratedResult.mediaAssetId(), hydratedResult);
+            GroupedMatches groupedMatches = groupedMatchesByAssetId.computeIfAbsent(
+                    hydratedResult.mediaAssetId(),
+                    ignored -> new GroupedMatches()
+            );
+
+            if ("audio".equals(hydratedResult.matchType()) && groupedMatches.bestAudioMatch == null) {
+                groupedMatches.bestAudioMatch = hydratedResult;
+                continue;
+            }
+
+            if ("visual".equals(hydratedResult.matchType()) && groupedMatches.bestVisualMatch == null) {
+                groupedMatches.bestVisualMatch = hydratedResult;
+            }
         }
 
-        return new ArrayList<>(bestMatchPerAsset.values());
+        List<SearchResultGroupDto> groupedResults = new ArrayList<>();
+        for (Map.Entry<UUID, GroupedMatches> entry : groupedMatchesByAssetId.entrySet()) {
+            SearchResultDto bestAudioMatch = entry.getValue().bestAudioMatch;
+            SearchResultDto bestVisualMatch = entry.getValue().bestVisualMatch;
+
+            if (bestAudioMatch == null && bestVisualMatch == null) {
+                continue;
+            }
+
+            float bestSimilarityScore = Math.max(
+                    bestAudioMatch != null ? bestAudioMatch.similarityScore() : Float.NEGATIVE_INFINITY,
+                    bestVisualMatch != null ? bestVisualMatch.similarityScore() : Float.NEGATIVE_INFINITY
+            );
+
+            String s3VideoUrl = bestAudioMatch != null
+                    ? bestAudioMatch.s3VideoUrl()
+                    : (bestVisualMatch != null ? bestVisualMatch.s3VideoUrl() : null);
+
+            groupedResults.add(new SearchResultGroupDto(
+                    entry.getKey(),
+                    bestSimilarityScore,
+                    s3VideoUrl,
+                    bestAudioMatch,
+                    bestVisualMatch
+            ));
+        }
+
+        groupedResults.sort(Comparator.comparing(SearchResultGroupDto::bestSimilarityScore).reversed());
+        return groupedResults;
     }
 
     private String normalizeQuery(String query) {
@@ -158,5 +198,10 @@ public class SearchService {
             throw new IllegalStateException("app.search.minimum-score must be between 0 and 1.");
         }
         return configuredMinimumScore;
+    }
+
+    private static final class GroupedMatches {
+        private SearchResultDto bestAudioMatch;
+        private SearchResultDto bestVisualMatch;
     }
 }

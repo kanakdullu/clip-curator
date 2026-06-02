@@ -88,7 +88,7 @@ public class VideoProcessingPipelineService {
             Path localVideo = storageService.downloadVideoToLocal(requiredMediaAssetId, mediaAsset.getS3Url());
             workingDirectory = localVideo.getParent();
 
-            Path audioPath = workingDirectory.resolve("audio.mp3");
+            Path audioPath = workingDirectory.resolve("audio.wav");
             Path framesDirectory = workingDirectory.resolve("output_frames");
 
             List<Path> framePaths = ffmpegService.extractFrames(localVideo, framesDirectory);

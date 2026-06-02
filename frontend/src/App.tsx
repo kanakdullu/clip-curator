@@ -8,7 +8,7 @@ import { SearchHero } from './components/SearchHero'
 import { TopBar } from './components/TopBar'
 import { UploadPanel } from './components/UploadPanel'
 import type { CompletedAsset } from './types/media'
-import type { SearchResult } from './types/search'
+import type { SearchResult, SearchResultGroup } from './types/search'
 import type {
   UploadConfirmResponse,
   UploadInitRequestBody,
@@ -45,6 +45,20 @@ interface ToastMessage {
   message: string
   mediaAssetId?: string
   progressPercent?: number
+}
+
+const flattenSearchGroups = (groups: SearchResultGroup[]): SearchResult[] => {
+  const flattenedResults: SearchResult[] = []
+
+  for (const group of groups) {
+    const groupMatches = [group.bestAudioMatch, group.bestVisualMatch]
+      .filter((match): match is SearchResult => match !== null)
+      .sort((left, right) => right.similarityScore - left.similarityScore)
+
+    flattenedResults.push(...groupMatches)
+  }
+
+  return flattenedResults
 }
 
 function App() {
@@ -331,10 +345,11 @@ function App() {
         throw new Error(`Search failed with status ${response.status}.`)
       }
 
-      const payload = (await response.json()) as SearchResult[]
-      setResults(payload)
+      const payload = (await response.json()) as SearchResultGroup[]
+      const flattenedResults = flattenSearchGroups(payload)
+      setResults(flattenedResults)
 
-      if (payload.length === 0) {
+      if (flattenedResults.length === 0) {
         setSelectedProcessedAsset(null)
         setSelectedIndex(null)
         setPendingSeekSeconds(null)
@@ -342,11 +357,11 @@ function App() {
         return
       }
 
-      const firstPlayable = payload.findIndex((item) => resolveVideoUrl(item, payload) !== null)
+      const firstPlayable = flattenedResults.findIndex((item) => resolveVideoUrl(item, flattenedResults) !== null)
       const initialIndex = firstPlayable >= 0 ? firstPlayable : 0
       setSelectedProcessedAsset(null)
       setSelectedIndex(initialIndex)
-      setPendingSeekSeconds(Number(payload[initialIndex].timestamp) || 0)
+      setPendingSeekSeconds(Number(flattenedResults[initialIndex].timestamp) || 0)
       setPlaybackSeconds(0)
     } catch (searchError) {
       const message = searchError instanceof Error ? searchError.message : 'Unknown search error.'
@@ -389,7 +404,7 @@ function App() {
           kind: 'error',
           stage: 'error',
           title: 'No file selected',
-          message: 'Select an MP4 or MOV file before starting upload.',
+          message: 'Select a supported video or image file before starting upload.',
         },
         { terminal: true },
       )
@@ -404,7 +419,7 @@ function App() {
           kind: 'error',
           stage: 'error',
           title: 'Unsupported file type',
-          message: 'Only MP4 or MOV uploads are supported by the backend.',
+          message: 'Supported uploads: MP4, MOV, JPG, PNG, GIF, BMP, WEBP, HEIC, HEIF, AVIF, TIFF.',
         },
         { terminal: true },
       )

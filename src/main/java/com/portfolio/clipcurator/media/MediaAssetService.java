@@ -1,11 +1,13 @@
 package com.portfolio.clipcurator.media;
 
 import com.portfolio.clipcurator.storage.StorageService;
+import com.portfolio.clipcurator.vector.PineconeVectorService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -20,17 +22,20 @@ public class MediaAssetService {
     private final TranscriptRepository transcriptRepository;
     private final VisualFrameRepository visualFrameRepository;
     private final StorageService storageService;
+    private final PineconeVectorService pineconeVectorService;
 
     public MediaAssetService(
             MediaAssetRepository mediaAssetRepository,
             TranscriptRepository transcriptRepository,
             VisualFrameRepository visualFrameRepository,
-            StorageService storageService
+            StorageService storageService,
+            PineconeVectorService pineconeVectorService
     ) {
         this.mediaAssetRepository = mediaAssetRepository;
         this.transcriptRepository = transcriptRepository;
         this.visualFrameRepository = visualFrameRepository;
         this.storageService = storageService;
+        this.pineconeVectorService = pineconeVectorService;
     }
 
     public List<CompletedAssetDto> listCompletedAssets(Integer limit) {
@@ -48,6 +53,26 @@ public class MediaAssetService {
 
         MediaAsset mediaAsset = mediaAssetRepository.findById(requiredMediaAssetId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Media asset not found."));
+
+        List<Transcript> transcripts = transcriptRepository.findByMediaAsset_Id(requiredMediaAssetId);
+        List<VisualFrame> visualFrames = visualFrameRepository.findByMediaAsset_Id(requiredMediaAssetId);
+
+        List<String> vectorIds = new ArrayList<>(transcripts.size() + visualFrames.size());
+        for (Transcript transcript : transcripts) {
+            vectorIds.add(transcript.getId().toString());
+        }
+        for (VisualFrame visualFrame : visualFrames) {
+            vectorIds.add(visualFrame.getId().toString());
+        }
+
+        if (!vectorIds.isEmpty()) {
+            pineconeVectorService.deleteByIds(vectorIds);
+        }
+
+        storageService.deleteObject(mediaAsset.getS3Url());
+        for (VisualFrame visualFrame : visualFrames) {
+            storageService.deleteObject(visualFrame.getS3ImageUrl());
+        }
 
         transcriptRepository.deleteByMediaAsset_Id(requiredMediaAssetId);
         visualFrameRepository.deleteByMediaAsset_Id(requiredMediaAssetId);

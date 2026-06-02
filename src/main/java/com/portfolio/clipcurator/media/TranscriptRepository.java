@@ -13,5 +13,7 @@ public interface TranscriptRepository extends JpaRepository<Transcript, UUID> {
 	@Query("select t from Transcript t join fetch t.mediaAsset where t.id in :ids")
 	List<Transcript> findAllByIdIn(@Param("ids") Collection<UUID> ids);
 
+	List<Transcript> findByMediaAsset_Id(UUID mediaAssetId);
+
 	long deleteByMediaAsset_Id(UUID mediaAssetId);
 }

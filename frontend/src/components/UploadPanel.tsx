@@ -26,7 +26,7 @@ export function UploadPanel({
         <section className="upload-panel">
             <div className="panel-heading upload-heading">
                 <h2>Upload Clip</h2>
-                <p>MP4 or MOV, max 2 GB</p>
+                <p>Video or image, max 2 GB</p>
             </div>
 
             <div className="upload-controls">
@@ -34,7 +34,7 @@ export function UploadPanel({
                     <span className="upload-input-label">Select file</span>
                     <input
                         type="file"
-                        accept="video/mp4,video/quicktime,.mp4,.mov"
+                        accept="video/mp4,video/quicktime,image/jpeg,image/png,image/gif,image/bmp,image/webp,image/heic,image/heif,image/avif,image/tiff,.mp4,.mov,.jpg,.jpeg,.png,.gif,.bmp,.webp,.heic,.heif,.avif,.tif,.tiff"
                         onChange={handleFileChange}
                         disabled={isUploading}
                     />
@@ -46,7 +46,7 @@ export function UploadPanel({
                     onClick={onStartUpload}
                     disabled={isUploading || !selectedFile}
                 >
-                    {isUploading ? 'Uploading...' : 'Upload Video'}
+                    {isUploading ? 'Uploading...' : 'Upload Media'}
                 </button>
             </div>
 
@@ -55,7 +55,7 @@ export function UploadPanel({
                     {selectedFile.name} | {formatFileSize(selectedFile.size)}
                 </p>
             ) : (
-                <p className="upload-hint">Pick a video file to publish and queue processing.</p>
+                <p className="upload-hint">Pick a supported video or image file to publish and queue processing.</p>
             )}
         </section>
     )

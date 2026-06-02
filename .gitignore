@@ -31,3 +31,13 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Environment ###
+.env
+.env.*
+!.env.example
+
+### Python cache ###
+__pycache__/
+**/__pycache__/
+*.py[cod]

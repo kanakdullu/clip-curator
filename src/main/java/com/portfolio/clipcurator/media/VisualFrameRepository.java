@@ -14,6 +14,8 @@ public interface VisualFrameRepository extends JpaRepository<VisualFrame, UUID> 
 	@Query("select vf from VisualFrame vf join fetch vf.mediaAsset where vf.id in :ids")
 	List<VisualFrame> findAllByIdIn(@Param("ids") Collection<UUID> ids);
 
+	List<VisualFrame> findByMediaAsset_Id(UUID mediaAssetId);
+
 	Optional<VisualFrame> findFirstByMediaAsset_IdOrderByTimestampAsc(UUID mediaAssetId);
 
 	long deleteByMediaAsset_Id(UUID mediaAssetId);

@@ -493,6 +493,49 @@
   color: var(--text-soft);
 }
 
+.results-heading {
+  align-items: flex-start;
+}
+
+.results-heading-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.72rem;
+  flex-wrap: wrap;
+}
+
+.results-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.26rem;
+  padding: 0.22rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.results-filter-button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.28rem 0.58rem;
+  background: transparent;
+  color: var(--text-soft);
+  font: 700 0.68rem/1 var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.results-filter-button:hover {
+  color: var(--text-strong);
+}
+
+.results-filter-button.active {
+  color: var(--text-strong);
+  background: rgba(255, 98, 77, 0.23);
+}
+
 .status-banner {
   margin: 0 0 0.85rem;
   border-radius: 10px;
@@ -522,6 +565,50 @@
   gap: 0.72rem;
   max-height: 67vh;
   overflow: auto;
+}
+
+.results-groups {
+  display: grid;
+  gap: 0.9rem;
+  max-height: 67vh;
+  overflow: auto;
+  padding-right: 0.08rem;
+}
+
+.results-group {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.results-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.results-group-heading h3 {
+  margin: 0;
+  color: var(--text-soft);
+  font: 700 0.76rem/1 var(--font-display);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.results-group-heading span {
+  min-width: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-soft);
+  font: 700 0.72rem/1 var(--font-body);
+  text-align: center;
+  padding: 0.2rem 0.38rem;
+}
+
+.results-grid-grouped {
+  max-height: none;
+  overflow: visible;
 }
 
 .result-card {
@@ -851,6 +938,10 @@
     grid-template-columns: 1fr;
   }
 
+  .results-groups {
+    max-height: 46vh;
+  }
+
   .results-grid {
     max-height: 46vh;
   }
@@ -870,6 +961,14 @@
 
   .search-form {
     grid-template-columns: 1fr;
+  }
+
+  .results-heading {
+    gap: 0.65rem;
+  }
+
+  .results-heading-main {
+    width: 100%;
   }
 
   .upload-controls {

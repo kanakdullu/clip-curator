@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import static io.pinecone.commons.IndexInterface.buildUpsertVectorWithUnsignedIndices;
@@ -104,6 +105,25 @@ public class PineconeVectorService {
 
         matches.sort(Comparator.comparing(VectorMatch::similarityScore).reversed());
         return matches;
+    }
+
+    public void deleteByIds(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+
+        List<String> normalizedIds = ids.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .distinct()
+                .toList();
+
+        if (normalizedIds.isEmpty()) {
+            return;
+        }
+
+        index.deleteByIds(normalizedIds, namespace);
     }
 
     private String extractMetadataValue(Struct metadata, String fieldName) {

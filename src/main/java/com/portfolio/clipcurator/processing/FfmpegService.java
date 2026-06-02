@@ -14,6 +14,11 @@ import java.util.stream.Stream;
 @Service
 public class FfmpegService {
 
+    // Speech-focused preprocessing before Whisper: remove low rumble/high hiss,
+    // apply light denoise, and normalize loudness.
+    private static final String SPEECH_AUDIO_FILTER =
+            "highpass=f=80,lowpass=f=7600,afftdn=nf=-25,loudnorm=I=-16:TP=-1.5:LRA=11";
+
     private final String ffmpegCommand;
     private final String ffprobeCommand;
     private final String frameSamplingFps;
@@ -52,8 +57,10 @@ public class FfmpegService {
                 "-y",
                 "-i", inputVideo.toAbsolutePath().toString(),
                 "-vn",
-                "-acodec", "libmp3lame",
-                "-q:a", "2",
+                "-ac", "1",
+                "-ar", "16000",
+                "-c:a", "pcm_s16le",
+                "-af", SPEECH_AUDIO_FILTER,
                 outputAudio.toAbsolutePath().toString()
         ));
 

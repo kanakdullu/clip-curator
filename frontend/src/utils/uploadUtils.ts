@@ -1,4 +1,32 @@
-const SUPPORTED_MIME_TYPES = new Set(['video/mp4', 'video/quicktime'])
+const SUPPORTED_MIME_TYPES = new Set([
+    'video/mp4',
+    'video/quicktime',
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/bmp',
+    'image/webp',
+    'image/heic',
+    'image/heif',
+    'image/avif',
+    'image/tiff',
+])
+
+const EXTENSION_TO_MIME_TYPE: Record<string, string> = {
+    '.mp4': 'video/mp4',
+    '.mov': 'video/quicktime',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.bmp': 'image/bmp',
+    '.webp': 'image/webp',
+    '.heic': 'image/heic',
+    '.heif': 'image/heif',
+    '.avif': 'image/avif',
+    '.tif': 'image/tiff',
+    '.tiff': 'image/tiff',
+}
 
 export const resolveUploadMimeType = (file: File): string | null => {
     const providedMimeType = file.type.toLowerCase()
@@ -7,12 +35,10 @@ export const resolveUploadMimeType = (file: File): string | null => {
     }
 
     const normalizedName = file.name.toLowerCase()
-    if (normalizedName.endsWith('.mp4')) {
-        return 'video/mp4'
-    }
-
-    if (normalizedName.endsWith('.mov')) {
-        return 'video/quicktime'
+    for (const [extension, mimeType] of Object.entries(EXTENSION_TO_MIME_TYPE)) {
+        if (normalizedName.endsWith(extension)) {
+            return mimeType
+        }
     }
 
     return null

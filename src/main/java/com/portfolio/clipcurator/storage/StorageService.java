@@ -6,6 +6,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
@@ -128,6 +129,17 @@ public class StorageService {
 
         PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner.presignGetObject(getObjectPresignRequest);
         return presignedGetObjectRequest.url().toString();
+    }
+
+    public void deleteObject(String s3Uri) {
+        S3Location s3Location = parseS3Uri(s3Uri);
+
+        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                .bucket(s3Location.bucket())
+                .key(s3Location.objectKey())
+                .build();
+
+        s3Client.deleteObject(deleteObjectRequest);
     }
 
     private S3Location parseS3Uri(String s3Uri) {

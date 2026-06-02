@@ -29,7 +29,7 @@ public class HuggingFaceRestClient implements AiService {
     private static final int MAX_RETRIES = 3;
     private static final long RATE_LIMIT_BACKOFF_MILLIS = 5_000;
     private static final int CONNECT_TIMEOUT_MILLIS = 10_000;
-    private static final int READ_TIMEOUT_MILLIS = 60_000;
+    private static final int READ_TIMEOUT_MILLIS = 300_000;
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;

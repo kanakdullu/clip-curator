@@ -18,7 +18,7 @@ public class SearchController {
     }
 
     @GetMapping
-    public List<SearchResultDto> search(@RequestParam("q") String query) {
+    public List<SearchResultGroupDto> search(@RequestParam("q") String query) {
         return searchService.search(query);
     }
 }

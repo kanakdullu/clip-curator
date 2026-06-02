@@ -22,6 +22,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -171,7 +173,7 @@ class MediaAssetControllerIntegrationTest {
                 Instant.parse("2025-01-01T10:00:00Z")
         ));
 
-        transcriptRepository.save(new Transcript(
+        Transcript transcript = transcriptRepository.save(new Transcript(
                 UUID.randomUUID(),
                 mediaAsset,
                 new BigDecimal("1.000"),
@@ -179,7 +181,7 @@ class MediaAssetControllerIntegrationTest {
                 "Delete this transcript"
         ));
 
-        visualFrameRepository.save(new VisualFrame(
+        VisualFrame visualFrame = visualFrameRepository.save(new VisualFrame(
                 UUID.randomUUID(),
                 mediaAsset,
                 new BigDecimal("2.000"),
@@ -188,6 +190,14 @@ class MediaAssetControllerIntegrationTest {
 
         mockMvc.perform(delete("/api/v1/assets/{id}", mediaAsset.getId()))
                 .andExpect(status().isNoContent());
+
+        verify(storageService).deleteObject(mediaAsset.getS3Url());
+        verify(storageService).deleteObject(visualFrame.getS3ImageUrl());
+        verify(pineconeVectorService).deleteByIds(argThat((java.util.List<String> ids) ->
+                ids.size() == 2
+                        && ids.contains(transcript.getId().toString())
+                        && ids.contains(visualFrame.getId().toString())
+        ));
 
         mockMvc.perform(get("/api/v1/assets/completed"))
                 .andExpect(status().isOk())

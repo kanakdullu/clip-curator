@@ -78,7 +78,7 @@ def transcribe_audio(request: InferenceRequest) -> dict[str, Any]:
     try:
         audio_bytes = decode_base64_payload(request.inputs)
 
-        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
             temp_file.write(audio_bytes)
             temp_path = temp_file.name
 
