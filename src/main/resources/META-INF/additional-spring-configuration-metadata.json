@@ -13,11 +13,6 @@
       "defaultValue": "clip-curator"
     },
     {
-      "name": "app.huggingface.api-token",
-      "type": "java.lang.String",
-      "description": "Hugging Face API token used for Whisper and CLIP calls."
-    },
-    {
       "name": "app.huggingface.whisper-url",
       "type": "java.lang.String",
       "description": "Whisper inference endpoint URL.",

@@ -33,19 +33,16 @@ public class HuggingFaceRestClient implements AiService {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
-    private final String apiToken;
     private final String whisperUrl;
     private final String clipUrl;
 
     public HuggingFaceRestClient(
             RestClient.Builder restClientBuilder,
             ObjectMapper objectMapper,
-            @Value("${app.huggingface.api-token}") String apiToken,
             @Value("${app.huggingface.whisper-url}") String whisperUrl,
             @Value("${app.huggingface.clip-url}") String clipUrl
     ) {
         this.objectMapper = objectMapper;
-        this.apiToken = requireNonBlank(apiToken, "app.huggingface.api-token");
         this.whisperUrl = requireNonBlank(whisperUrl, "app.huggingface.whisper-url");
         this.clipUrl = requireNonBlank(clipUrl, "app.huggingface.clip-url");
 
@@ -112,7 +109,6 @@ public class HuggingFaceRestClient implements AiService {
                         .uri(url)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
-                        .headers(headers -> headers.setBearerAuth(apiToken))
                         .body(body)
                         .retrieve()
                         .body(String.class);

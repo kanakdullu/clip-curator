@@ -27,13 +27,12 @@ app:
     s3:
       bucket: ${CLIPCURATOR_S3_BUCKET:clip-curator}
   huggingface:
-    api-token: local-dev-token
     whisper-url: http://127.0.0.1:8000/models/openai/whisper-transcribe
     clip-url: http://127.0.0.1:8000/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32
   pinecone:
     api-key: ${PINECONE_API_KEY}
-    index-name: ${PINECONE_INDEX_NAME:clip-curator}
-    namespace: ${PINECONE_NAMESPACE:__default__}
+    index-name: ${PINECONE_INDEX_NAME}
+    namespace: ${PINECONE_NAMESPACE}
   search:
     top-k: ${CLIPCURATOR_SEARCH_TOP_K:50}
     minimum-score: ${CLIPCURATOR_SEARCH_MINIMUM_SCORE:0.15}
