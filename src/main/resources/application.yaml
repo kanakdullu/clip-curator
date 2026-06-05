@@ -23,23 +23,23 @@ spring:
 
 app:
   aws:
-    region: ${AWS_REGION:us-east-1}
+    region: ${AWS_REGION}
     s3:
-      bucket: ${CLIPCURATOR_S3_BUCKET:clip-curator}
+      bucket: ${CLIPCURATOR_S3_BUCKET}
   huggingface:
-    whisper-url: ${CLIPCURATOR_WHISPER_URL:http://127.0.0.1:8000/models/openai/whisper-transcribe}
-    clip-url: ${CLIPCURATOR_CLIP_URL:http://127.0.0.1:8000/pipeline/feature-extraction/sentence-transformers/clip-ViT-B-32}
+    whisper-url: ${CLIPCURATOR_WHISPER_URL}
+    clip-url: ${CLIPCURATOR_CLIP_URL}
   pinecone:
     api-key: ${PINECONE_API_KEY}
-    index-name: ${PINECONE_INDEX_NAME:clipcurator-index}
-    namespace: ${PINECONE_NAMESPACE:default}
+    index-name: ${PINECONE_INDEX_NAME}
+    namespace: ${PINECONE_NAMESPACE}
   search:
-    top-k: ${CLIPCURATOR_SEARCH_TOP_K:50}
-    minimum-score: ${CLIPCURATOR_SEARCH_MINIMUM_SCORE:0.15}
+    top-k: ${CLIPCURATOR_SEARCH_TOP_K}
+    minimum-score: ${CLIPCURATOR_SEARCH_MINIMUM_SCORE}
   processing:
-    tmp-dir: ${CLIPCURATOR_TMP_DIR:/tmp/clipcurator/assets}
-    frame-sampling-fps: ${CLIPCURATOR_FRAME_SAMPLING_FPS:1.0}
+    tmp-dir: ${CLIPCURATOR_TMP_DIR}
+    frame-sampling-fps: ${CLIPCURATOR_FRAME_SAMPLING_FPS}
     ffmpeg:
-      command: ${FFMPEG_COMMAND:ffmpeg}
+      command: ${FFMPEG_COMMAND}
     ffprobe:
-      command: ${FFPROBE_COMMAND:ffprobe}
+      command: ${FFPROBE_COMMAND}
